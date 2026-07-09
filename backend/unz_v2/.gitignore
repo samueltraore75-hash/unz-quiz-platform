@@ -1,0 +1,23 @@
+# Maven
+target/
+*.class
+!*/src/**/*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Secrets locaux (si jamais tu crées un fichier séparé pour tes vraies valeurs)
+application-local.properties
+.env

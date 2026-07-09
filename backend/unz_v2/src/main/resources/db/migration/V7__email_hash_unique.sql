@@ -1,0 +1,22 @@
+-- ============================================================================
+-- V7 — Recherche exacte sur e-mail sans affaiblir le chiffrement
+-- ============================================================================
+-- Le champ `email` est chiffré (AES-256-GCM, IV aléatoire) : deux chiffrements
+-- du même texte en clair donnent des résultats différents. Une contrainte
+-- UNIQUE ou une recherche SQL directe sur cette colonne ne peuvent donc
+-- jamais fonctionner correctement.
+--
+-- On ajoute une colonne séparée, `email_hash`, contenant un hachage SHA-256
+-- déterministe de l'e-mail normalisé (minuscules, sans espaces). Ce hachage :
+--   - est toujours identique pour un même e-mail (contrairement au chiffré) ;
+--   - ne permet pas de retrouver l'e-mail en clair (non réversible) ;
+--   - sert UNIQUEMENT à la recherche exacte et à l'unicité, jamais à l'affichage.
+--
+-- La colonne démarre vide (NULL) pour tous les comptes existants : c'est
+-- volontaire et sans risque, MySQL autorise plusieurs valeurs NULL dans un
+-- index UNIQUE (seules les valeurs non-NULL doivent être uniques entre elles).
+-- Le nettoyage des doublons existants et le remplissage de cette colonne pour
+-- les comptes déjà en base sont faits automatiquement au démarrage de
+-- l'application (voir EmailHashBackfillRunner), qui s'exécute après Flyway.
+ALTER TABLE users ADD COLUMN email_hash VARCHAR(64) NULL AFTER email;
+ALTER TABLE users ADD UNIQUE INDEX uq_users_email_hash (email_hash);

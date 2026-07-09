@@ -1,0 +1,19 @@
+# Backend Maven
+backend/unz_v2/target/
+*.class
+
+# Frontend
+frontend/unz-frontend/node_modules/
+frontend/unz-frontend/dist/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Secrets locaux
+.env
+.env.local
+application-local.properties
