@@ -13,15 +13,12 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
-# Hugging Face Spaces route le trafic public vers le port 7860 du conteneur
-# par défaut (voir app_port dans README.md). L'appli lit déjà server.port
-# depuis la variable d'environnement PORT (voir application.properties),
-# donc on se contente de la définir ici.
-ENV PORT=7860
-EXPOSE 7860
 
-# Réglages JVM raisonnables (16GB RAM dispo sur Hugging Face Spaces CPU
-# Basic, donc pas besoin de les serrer comme sur un hébergeur à 256MB) :
-ENV JAVA_OPTS="-Xmx512m -XX:+UseSerialGC"
+# Render assigne son propre port via la variable d'environnement PORT.
+ENV PORT=8080
+EXPOSE 8080
+
+# Réglages JVM adaptés aux 512MB de la VM Render gratuite
+ENV JAVA_OPTS="-Xmx350m -Xss256k -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m"
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
