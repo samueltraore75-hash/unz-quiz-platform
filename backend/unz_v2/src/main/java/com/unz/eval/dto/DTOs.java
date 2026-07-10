@@ -2046,6 +2046,7 @@ public static class AdminStatsDTO {
             return obj;
         }
     }
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // INSCRIPTIONS (admin) — rattachement d'un étudiant existant à une classe
