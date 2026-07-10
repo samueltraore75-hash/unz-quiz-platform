@@ -380,3 +380,71 @@ class AdminStatsController {
 
 // ══════════════════════════════════════════════════════════════════════════
 // INSCRIPTION — rattachement annuel étudiant ↔ classe (passage d'année)
+// ══════════════════════════════════════════════════════════════════════════
+@RestController
+@RequestMapping("/api/admin/inscriptions")
+@PreAuthorize("hasRole('ADMIN')")
+class InscriptionAdminController {
+
+    private final InscriptionRepository inscriptionRepo;
+    private final UserRepository userRepo;
+    private final ClasseRepository classeRepo;
+    private final AnneeAcademiqueRepository anneeRepo;
+
+    public InscriptionAdminController(InscriptionRepository inscriptionRepo, UserRepository userRepo,
+                                       ClasseRepository classeRepo, AnneeAcademiqueRepository anneeRepo) {
+        this.inscriptionRepo = inscriptionRepo;
+        this.userRepo = userRepo;
+        this.classeRepo = classeRepo;
+        this.anneeRepo = anneeRepo;
+    }
+
+    /**
+     * Inscrit un étudiant existant dans une classe pour une année académique.
+     * Si une inscription existe déjà pour ce couple (étudiant, année) — cas du
+     * passage L3 → L4 par exemple, où l'admin corrige/ré-affecte la classe —
+     * on met à jour la classe plutôt que d'échouer sur la contrainte d'unicité.
+     */
+    @PostMapping
+    public ResponseEntity<DTOs.InscriptionDTO> inscrire(@Valid @RequestBody DTOs.CreateInscriptionRequest req) {
+        User etudiant = userRepo.findById(req.getEtudiantId())
+                .orElseThrow(() -> new ResourceNotFoundException("Étudiant introuvable"));
+        if (!etudiant.isEtudiant())
+            throw new BadRequestException("Cet utilisateur n'a pas le rôle ÉTUDIANT.");
+
+        Classe classe = classeRepo.findById(req.getClasseId())
+                .orElseThrow(() -> new ResourceNotFoundException("Classe introuvable"));
+        AnneeAcademique annee = anneeRepo.findById(req.getAnneeAcademiqueId())
+                .orElseThrow(() -> new ResourceNotFoundException("Année académique introuvable"));
+
+        Inscription inscription = inscriptionRepo.findByEtudiantAndAnneeAcademique(etudiant, annee)
+                .orElseGet(() -> Inscription.builder().etudiant(etudiant).anneeAcademique(annee).build());
+        inscription.setClasse(classe);
+        if (inscription.getStatut() == null) inscription.setStatut(Inscription.Statut.EN_COURS);
+        inscription = inscriptionRepo.save(inscription);
+
+        return ResponseEntity.ok(toDTO(inscription));
+    }
+
+    /** Historique des inscriptions d'un étudiant, de la plus récente à la plus ancienne. */
+    @GetMapping("/etudiant/{etudiantId}")
+    public ResponseEntity<List<DTOs.InscriptionDTO>> historique(@PathVariable Long etudiantId) {
+        User etudiant = userRepo.findById(etudiantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Étudiant introuvable"));
+        List<DTOs.InscriptionDTO> result = inscriptionRepo
+                .findByEtudiantOrderByAnneeAcademique_DateDebutDesc(etudiant)
+                .stream().map(this::toDTO).collect(Collectors.toList());
+        return ResponseEntity.ok(result);
+    }
+
+    private DTOs.InscriptionDTO toDTO(Inscription i) {
+        return DTOs.InscriptionDTO.builder()
+                .id(i.getId())
+                .etudiantNom(i.getEtudiant().getFullName())
+                .classeNom(i.getClasse().getNom())
+                .anneeLibelle(i.getAnneeAcademique().getLibelle())
+                .statut(i.getStatut().name())
+                .dateInscription(i.getDateInscription())
+                .build();
+    }
+}

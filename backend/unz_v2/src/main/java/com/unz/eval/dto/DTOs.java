@@ -2046,6 +2046,75 @@ public static class AdminStatsDTO {
             return obj;
         }
     }
+
+// ══════════════════════════════════════════════════════════════════════════
+// INSCRIPTIONS (admin) — rattachement d'un étudiant existant à une classe
+// pour une année académique donnée.
+// ══════════════════════════════════════════════════════════════════════════
+
+public static class CreateInscriptionRequest {
+    @NotNull private Long etudiantId;
+    @NotNull private Long classeId;
+    @NotNull private Long anneeAcademiqueId;
+
+    public Long getEtudiantId() { return this.etudiantId; }
+    public void setEtudiantId(Long v) { this.etudiantId = v; }
+    public Long getClasseId() { return this.classeId; }
+    public void setClasseId(Long v) { this.classeId = v; }
+    public Long getAnneeAcademiqueId() { return this.anneeAcademiqueId; }
+    public void setAnneeAcademiqueId(Long v) { this.anneeAcademiqueId = v; }
+}
+
+public static class InscriptionDTO {
+    private Long id;
+    private String etudiantNom;
+    private String classeNom;
+    private String anneeLibelle;
+    private String statut;
+    private LocalDateTime dateInscription;
+
+    public Long getId() { return this.id; }
+    public void setId(Long v) { this.id = v; }
+    public String getEtudiantNom() { return this.etudiantNom; }
+    public void setEtudiantNom(String v) { this.etudiantNom = v; }
+    public String getClasseNom() { return this.classeNom; }
+    public void setClasseNom(String v) { this.classeNom = v; }
+    public String getAnneeLibelle() { return this.anneeLibelle; }
+    public void setAnneeLibelle(String v) { this.anneeLibelle = v; }
+    public String getStatut() { return this.statut; }
+    public void setStatut(String v) { this.statut = v; }
+    public LocalDateTime getDateInscription() { return this.dateInscription; }
+    public void setDateInscription(LocalDateTime v) { this.dateInscription = v; }
+
+    public static InscriptionDTOBuilder builder() { return new InscriptionDTOBuilder(); }
+
+    public static class InscriptionDTOBuilder {
+        private Long id;
+        private String etudiantNom;
+        private String classeNom;
+        private String anneeLibelle;
+        private String statut;
+        private LocalDateTime dateInscription;
+
+        public InscriptionDTOBuilder id(Long v) { this.id = v; return this; }
+        public InscriptionDTOBuilder etudiantNom(String v) { this.etudiantNom = v; return this; }
+        public InscriptionDTOBuilder classeNom(String v) { this.classeNom = v; return this; }
+        public InscriptionDTOBuilder anneeLibelle(String v) { this.anneeLibelle = v; return this; }
+        public InscriptionDTOBuilder statut(String v) { this.statut = v; return this; }
+        public InscriptionDTOBuilder dateInscription(LocalDateTime v) { this.dateInscription = v; return this; }
+
+        public InscriptionDTO build() {
+            InscriptionDTO obj = new InscriptionDTO();
+            obj.id = this.id;
+            obj.etudiantNom = this.etudiantNom;
+            obj.classeNom = this.classeNom;
+            obj.anneeLibelle = this.anneeLibelle;
+            obj.statut = this.statut;
+            obj.dateInscription = this.dateInscription;
+            return obj;
+        }
+    }
+}
 }
 
 }
