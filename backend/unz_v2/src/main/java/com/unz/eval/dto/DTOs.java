@@ -2118,5 +2118,4 @@ public static class InscriptionDTO {
 }
 }
 
-}
 
