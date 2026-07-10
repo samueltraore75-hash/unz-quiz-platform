@@ -2,7 +2,7 @@
 // En production, le frontend et le backend sont déployés séparément (deux services distincts) :
 // il faut alors définir VITE_API_URL au moment du build avec l'URL complète du backend,
 // ex: VITE_API_URL=https://unzquiz-backend.up.railway.app/api
-const BASE_URL = import.meta.env.VITE_API_URL || "/api";
+export const BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 function getTokens() {
   return {

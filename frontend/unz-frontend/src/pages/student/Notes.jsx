@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { gradesApi } from "../../api/grades";
-import { tokenStore } from "../../api/client";
+import { tokenStore, BASE_URL } from "../../api/client";
 import Chip from "../../components/ui/Chip";
 import VerticalBarChart from "../../components/ui/VerticalBarChart";
 
@@ -18,7 +18,7 @@ export default function Notes() {
   async function downloadBulletin(id) {
     try {
       const { accessToken } = tokenStore.getTokens();
-      const res = await fetch(`/api/bulletins/${id}/pdf`, {
+      const res = await fetch(`${BASE_URL}/bulletins/${id}/pdf`, {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
       if (!res.ok) throw new Error(`Erreur ${res.status}`);
