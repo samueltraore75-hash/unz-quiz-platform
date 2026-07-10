@@ -1,24 +1,41 @@
 package com.unz.eval.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Envoi des e-mails transactionnels de la plateforme (validation de compte,
- * mot de passe temporaire). Volontairement défensif : un problème d'envoi
- * (SMTP mal configuré, Gmail indisponible...) ne doit JAMAIS faire échouer
- * l'action admin qui a déclenché l'e-mail — on logge simplement l'erreur.
+ * mot de passe temporaire, lien de réinitialisation). Volontairement défensif :
+ * un problème d'envoi ne doit JAMAIS faire échouer l'action admin qui l'a
+ * déclenché — on logge simplement l'erreur.
+ *
+ * v5 : envoi via l'API HTTP de Brevo (https://api.brevo.com) au lieu de SMTP
+ * direct. Motif : les hébergeurs gratuits (Render, Railway...) bloquent le
+ * trafic sortant vers les ports SMTP (25/465/587) pour limiter le spam — seul
+ * le HTTPS (port 443) reste ouvert. Passer par une API HTTP contourne cette
+ * restriction sans dépendre du plan payant d'un hébergeur.
  */
 @Service
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+    private static final String BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
-    private final JavaMailSender mailSender;
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${app.mail.enabled:false}")
     private boolean enabled;
@@ -29,9 +46,8 @@ public class EmailService {
     @Value("${app.mail.from-name:UNZ Quiz}")
     private String fromName;
 
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
+    @Value("${app.mail.api-key:}")
+    private String apiKey;
 
     public void envoyerBienvenue(String destinataire, String prenom, String username) {
         String sujet = "Votre compte UNZ Quiz a été validé";
@@ -79,16 +95,38 @@ public class EmailService {
             log.warn("[email] destinataire manquant, envoi annulé (sujet=\"{}\")", sujet);
             return;
         }
+        if (apiKey == null || apiKey.isBlank()) {
+            log.warn("[email] app.mail.api-key non configurée — envoi annulé (sujet=\"{}\")", sujet);
+            return;
+        }
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(from);
-            message.setTo(destinataire);
-            message.setSubject(sujet);
-            message.setText(corps);
-            mailSender.send(message);
-            log.info("[email] envoyé à={} sujet=\"{}\"", destinataire, sujet);
+            Map<String, Object> body = Map.of(
+                    "sender", Map.of("name", fromName, "email", from),
+                    "to", List.of(Map.of("email", destinataire)),
+                    "subject", sujet,
+                    "textContent", corps
+            );
+            String json = objectMapper.writeValueAsString(body);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(BREVO_API_URL))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .header("api-key", apiKey)
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info("[email] envoyé à={} sujet=\"{}\"", destinataire, sujet);
+            } else {
+                log.error("[email] échec d'envoi à={} sujet=\"{}\" : HTTP {} — {}",
+                        destinataire, sujet, response.statusCode(), response.body());
+            }
         } catch (Exception e) {
-            // On avale volontairement l'erreur : un souci SMTP ne doit jamais
+            // On avale volontairement l'erreur : un souci d'envoi ne doit jamais
             // empêcher l'admin de valider un compte ou réinitialiser un mot de passe.
             log.error("[email] échec d'envoi à={} sujet=\"{}\" : {}", destinataire, sujet, e.getMessage());
         }
