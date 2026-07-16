@@ -15,7 +15,8 @@ import java.time.LocalDateTime;
 @Table(name = "tentative_evenements")
 public class TentativeEvenement {
 
-    public enum Type { PERTE_FOCUS, COPIER_COLLER, CHANGEMENT_ONGLET, RETOUR_FOCUS }
+    /** v3.3 : SORTIE_PLEIN_ECRAN ajouté avec le mode examen strict (plein écran obligatoire) */
+    public enum Type { PERTE_FOCUS, COPIER_COLLER, CHANGEMENT_ONGLET, RETOUR_FOCUS, SORTIE_PLEIN_ECRAN }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

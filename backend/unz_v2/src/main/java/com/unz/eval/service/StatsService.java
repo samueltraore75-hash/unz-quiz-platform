@@ -118,6 +118,26 @@ public class StatsService {
                 .build();
     }
 
+    /**
+     * v3.3 : anti-triche — chaque type d'événement pèse différemment dans le score final.
+     * Le copier-coller est le signal le plus révélateur ; une perte de focus isolée
+     * peut être bénigne (notification, clic accidentel) et pèse donc très peu.
+     */
+    private static final Map<TentativeEvenement.Type, Integer> POIDS_EVENEMENT = Map.of(
+            TentativeEvenement.Type.PERTE_FOCUS, 1,
+            TentativeEvenement.Type.RETOUR_FOCUS, 0,
+            TentativeEvenement.Type.CHANGEMENT_ONGLET, 3,
+            TentativeEvenement.Type.SORTIE_PLEIN_ECRAN, 4,
+            TentativeEvenement.Type.COPIER_COLLER, 5
+    );
+
+    private static String niveauRisque(int score) {
+        if (score <= 0) return "AUCUN";
+        if (score < 15) return "FAIBLE";
+        if (score < 30) return "MOYEN";
+        return "ELEVE";
+    }
+
     public Map<String, Object> notesClasse(Long quizId, User enseignant) {
         Quiz quiz = quizRepo.findById(quizId)
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz introuvable"));
@@ -133,14 +153,19 @@ public class StatsService {
                     Double n20 = bareme > 0 && t.getNoteObtenue() != null
                             ? Math.round(t.getNoteObtenue().doubleValue() / bareme * 20 * 100.0) / 100.0
                             : null;
-                    // v3.3 : anti-triche — nombre d'événements suspects relevés pendant cette tentative
-                    long nbEvenementsSuspects = evenementRepo.findByTentative(t).size();
+                    // v3.3 : anti-triche — score pondéré (voir POIDS_EVENEMENT) et niveau de risque
+                    List<TentativeEvenement> evenements = evenementRepo.findByTentative(t);
+                    int scoreRisque = evenements.stream()
+                            .mapToInt(ev -> POIDS_EVENEMENT.getOrDefault(ev.getType(), 1))
+                            .sum();
 
                     Map<String, Object> ligne = new HashMap<>();
                     ligne.put("etudiantNom", t.getEtudiant().getFullName());
                     ligne.put("noteObtenue", t.getNoteObtenue() != null ? t.getNoteObtenue() : "—");
                     ligne.put("noteSur20", n20 != null ? n20 : "—");
-                    ligne.put("nbEvenementsSuspects", nbEvenementsSuspects);
+                    ligne.put("nbEvenementsSuspects", (long) evenements.size());
+                    ligne.put("scoreRisque", scoreRisque);
+                    ligne.put("niveauRisque", niveauRisque(scoreRisque));
                     return ligne;
                 }).collect(Collectors.toList());
 

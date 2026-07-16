@@ -304,6 +304,9 @@ public static class QuizDetailDTO {
     private LocalDateTime prochaineTentativeDisponibleA;
     /** ENF-1 : questions sans les bonnes réponses avant clôture */
     private List<QuestionPublicDTO> questions;
+    /** v3.3 : anti-triche — réglages du devoir, transmis au client pour piloter la détection */
+    private Integer seuilAlerteScore;
+    private boolean pleinEcranObligatoire;
 
     // getters & setters
     public Long getId() { return this.id; }
@@ -332,6 +335,10 @@ public static class QuizDetailDTO {
     public void setProchaineTentativeDisponibleA(LocalDateTime prochaineTentativeDisponibleA) { this.prochaineTentativeDisponibleA = prochaineTentativeDisponibleA; }
     public List<QuestionPublicDTO> getQuestions() { return this.questions; }
     public void setQuestions(List<QuestionPublicDTO> questions) { this.questions = questions; }
+    public Integer getSeuilAlerteScore() { return this.seuilAlerteScore; }
+    public void setSeuilAlerteScore(Integer seuilAlerteScore) { this.seuilAlerteScore = seuilAlerteScore; }
+    public boolean isPleinEcranObligatoire() { return this.pleinEcranObligatoire; }
+    public void setPleinEcranObligatoire(boolean pleinEcranObligatoire) { this.pleinEcranObligatoire = pleinEcranObligatoire; }
 
     // ── Builder manuel (auto-généré) ──────────────────────────────────
     public static QuizDetailDTOBuilder builder() { return new QuizDetailDTOBuilder(); }
@@ -350,6 +357,8 @@ public static class QuizDetailDTO {
         private Integer tentativesUtilisees;
         private LocalDateTime prochaineTentativeDisponibleA;
         private List<QuestionPublicDTO> questions;
+        private Integer seuilAlerteScore;
+        private Boolean pleinEcranObligatoire;
 
         public QuizDetailDTOBuilder id(Long v) { this.id = v; return this; }
         public QuizDetailDTOBuilder titre(String v) { this.titre = v; return this; }
@@ -364,6 +373,8 @@ public static class QuizDetailDTO {
         public QuizDetailDTOBuilder tentativesUtilisees(Integer v) { this.tentativesUtilisees = v; return this; }
         public QuizDetailDTOBuilder prochaineTentativeDisponibleA(LocalDateTime v) { this.prochaineTentativeDisponibleA = v; return this; }
         public QuizDetailDTOBuilder questions(List<QuestionPublicDTO> v) { this.questions = v; return this; }
+        public QuizDetailDTOBuilder seuilAlerteScore(Integer v) { this.seuilAlerteScore = v; return this; }
+        public QuizDetailDTOBuilder pleinEcranObligatoire(Boolean v) { this.pleinEcranObligatoire = v; return this; }
 
         public QuizDetailDTO build() {
             QuizDetailDTO obj = new QuizDetailDTO();
@@ -380,6 +391,8 @@ public static class QuizDetailDTO {
             if (this.tentativesUtilisees != null) obj.tentativesUtilisees = this.tentativesUtilisees;
             if (this.prochaineTentativeDisponibleA != null) obj.prochaineTentativeDisponibleA = this.prochaineTentativeDisponibleA;
             if (this.questions != null) obj.questions = this.questions;
+            if (this.seuilAlerteScore != null) obj.seuilAlerteScore = this.seuilAlerteScore;
+            if (this.pleinEcranObligatoire != null) obj.pleinEcranObligatoire = this.pleinEcranObligatoire;
             return obj;
         }
     }
@@ -397,6 +410,9 @@ public static class QuizDetailDTO {
     private int delaiEntreTentativesMinutes = 0;
     private LocalDateTime dateOuverture;
     private LocalDateTime dateCloture;
+    /** v3.3 : anti-triche — réglages optionnels, valeurs par défaut raisonnables si absents */
+    private Integer seuilAlerteScore;
+    private Boolean pleinEcranObligatoire;
 
     // getters & setters
     public String getTitre() { return this.titre; }
@@ -419,6 +435,10 @@ public static class QuizDetailDTO {
     public void setDateOuverture(LocalDateTime dateOuverture) { this.dateOuverture = dateOuverture; }
     public LocalDateTime getDateCloture() { return this.dateCloture; }
     public void setDateCloture(LocalDateTime dateCloture) { this.dateCloture = dateCloture; }
+    public Integer getSeuilAlerteScore() { return this.seuilAlerteScore; }
+    public void setSeuilAlerteScore(Integer seuilAlerteScore) { this.seuilAlerteScore = seuilAlerteScore; }
+    public Boolean getPleinEcranObligatoire() { return this.pleinEcranObligatoire; }
+    public void setPleinEcranObligatoire(Boolean pleinEcranObligatoire) { this.pleinEcranObligatoire = pleinEcranObligatoire; }
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -757,6 +777,8 @@ public static class TentativeResultDTO {
     private BigDecimal bareme;
     /** EF-11 : détail des réponses — uniquement après clôture */
     private List<QuestionCorrigeeDTO> reponses;
+    /** v3.3 : anti-triche — transparence totale, l'étudiant voit aussi ce qui a été enregistré */
+    private long nbEvenementsSuspects;
 
     // getters & setters
     public Long getId() { return this.id; }
@@ -781,6 +803,8 @@ public static class TentativeResultDTO {
     public void setBareme(BigDecimal bareme) { this.bareme = bareme; }
     public List<QuestionCorrigeeDTO> getReponses() { return this.reponses; }
     public void setReponses(List<QuestionCorrigeeDTO> reponses) { this.reponses = reponses; }
+    public long getNbEvenementsSuspects() { return this.nbEvenementsSuspects; }
+    public void setNbEvenementsSuspects(long nbEvenementsSuspects) { this.nbEvenementsSuspects = nbEvenementsSuspects; }
 
     // ── Builder manuel (auto-généré) ──────────────────────────────────
     public static TentativeResultDTOBuilder builder() { return new TentativeResultDTOBuilder(); }
@@ -797,6 +821,7 @@ public static class TentativeResultDTO {
         private Double noteSurBareme;
         private BigDecimal bareme;
         private List<QuestionCorrigeeDTO> reponses;
+        private long nbEvenementsSuspects;
 
         public TentativeResultDTOBuilder id(Long v) { this.id = v; return this; }
         public TentativeResultDTOBuilder quizTitre(String v) { this.quizTitre = v; return this; }
@@ -809,6 +834,7 @@ public static class TentativeResultDTO {
         public TentativeResultDTOBuilder noteSurBareme(Double v) { this.noteSurBareme = v; return this; }
         public TentativeResultDTOBuilder bareme(BigDecimal v) { this.bareme = v; return this; }
         public TentativeResultDTOBuilder reponses(List<QuestionCorrigeeDTO> v) { this.reponses = v; return this; }
+        public TentativeResultDTOBuilder nbEvenementsSuspects(long v) { this.nbEvenementsSuspects = v; return this; }
 
         public TentativeResultDTO build() {
             TentativeResultDTO obj = new TentativeResultDTO();
@@ -823,6 +849,7 @@ public static class TentativeResultDTO {
             if (this.noteSurBareme != null) obj.noteSurBareme = this.noteSurBareme;
             if (this.bareme != null) obj.bareme = this.bareme;
             if (this.reponses != null) obj.reponses = this.reponses;
+            obj.nbEvenementsSuspects = this.nbEvenementsSuspects;
             return obj;
         }
     }

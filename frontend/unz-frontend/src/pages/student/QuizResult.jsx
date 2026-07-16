@@ -46,6 +46,19 @@ export default function QuizResult() {
         </div>
       </div>
 
+      {/* v3.3 : anti-triche — transparence totale envers l'étudiant, dans les deux sens */}
+      {!result.nbEvenementsSuspects ? (
+        <div className="alert alert-success" style={{ marginBottom:20 }}>
+          <i className="ti ti-shield-check" aria-hidden="true" />
+          Session propre — aucun comportement suspect détecté pendant ce devoir.
+        </div>
+      ) : (
+        <div className="alert alert-warning" style={{ marginBottom:20 }}>
+          <i className="ti ti-eye" aria-hidden="true" />
+          {result.nbEvenementsSuspects} événement{result.nbEvenementsSuspects > 1 ? "s" : ""} suspect{result.nbEvenementsSuspects > 1 ? "s" : ""} enregistré{result.nbEvenementsSuspects > 1 ? "s" : ""} pendant ce devoir, visible{result.nbEvenementsSuspects > 1 ? "s" : ""} par l'enseignant.
+        </div>
+      )}
+
       {visible && result.reponses && (
         <div>
           <div className="section-lbl">Détail des réponses</div>

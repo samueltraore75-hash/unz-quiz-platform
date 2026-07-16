@@ -24,6 +24,8 @@ export default function QuizCreate() {
     dureeMinutes: 30,
     tentativesMax: 1,
     delaiEntreTentativesMinutes: 0,
+    seuilAlerteScore: 15,
+    pleinEcranObligatoire: true,
   });
 
   useEffect(() => {
@@ -50,6 +52,8 @@ export default function QuizCreate() {
         dureeMinutes: Number(form.dureeMinutes),
         tentativesMax: Number(form.tentativesMax),
         delaiEntreTentativesMinutes: Number(form.delaiEntreTentativesMinutes),
+        seuilAlerteScore: Number(form.seuilAlerteScore),
+        pleinEcranObligatoire: form.typeQuiz === "EXAMEN" ? Boolean(form.pleinEcranObligatoire) : false,
       });
       navigate(`/quiz/${quiz.id}/gerer`);
     } catch (e2) {
@@ -160,6 +164,33 @@ export default function QuizCreate() {
             />
           </>
         )}
+
+        <div className="field" style={{ marginTop: 8, paddingTop: 16, borderTop: "1px solid var(--line-2)" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <i className="ti ti-shield-check" aria-hidden="true" /> Anti-triche
+          </label>
+          <p style={{ color: "var(--ink-3)", fontSize: 12, marginTop: -4, marginBottom: 10 }}>
+            Les comportements suspects (changement d'onglet, copier-coller…) sont toujours tracés.
+            Réglez ici le seuil de tolérance et, pour un examen, le mode plein écran obligatoire.
+          </p>
+          <Field
+            label="Seuil de score avant soumission automatique"
+            type="number"
+            min="1"
+            value={form.seuilAlerteScore}
+            onChange={(e) => update("seuilAlerteScore", e.target.value)}
+          />
+          {form.typeQuiz === "EXAMEN" && (
+            <label className="choice" style={{ marginTop: 8 }}>
+              <input
+                type="checkbox"
+                checked={form.pleinEcranObligatoire}
+                onChange={(e) => update("pleinEcranObligatoire", e.target.checked)}
+              />
+              Exiger le plein écran pendant toute la durée de l'examen
+            </label>
+          )}
+        </div>
 
         {error && <p className="login-error">{error}</p>}
 

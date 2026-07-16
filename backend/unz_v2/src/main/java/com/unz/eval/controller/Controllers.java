@@ -295,10 +295,12 @@ class TentativeController {
 
     private final QuizService quizService;
     private final TentativeRepository tentativeRepo;
+    private final TentativeEvenementRepository evenementRepo;
 
-    public TentativeController(QuizService quizService, TentativeRepository tentativeRepo) {
+    public TentativeController(QuizService quizService, TentativeRepository tentativeRepo, TentativeEvenementRepository evenementRepo) {
         this.quizService = quizService;
         this.tentativeRepo = tentativeRepo;
+        this.evenementRepo = evenementRepo;
     }
 
     @PostMapping("/quizzes/{quizId}/start")
@@ -434,6 +436,7 @@ class TentativeController {
                 .noteSurBareme(nBareme)
                 .bareme(visible ? t.getQuiz().getNoteSur() : null)
                 .reponses(reponses)
+                .nbEvenementsSuspects(evenementRepo.findByTentative(t).size())
                 .build();
     }
 }

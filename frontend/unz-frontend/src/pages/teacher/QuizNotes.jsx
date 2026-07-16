@@ -37,19 +37,26 @@ export default function QuizNotes() {
       </div>
 
       <div className="quiz-list">
-        {data.resultats.map((r, i) => (
-          <div className="card quiz-row" key={i}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <p className="quiz-row-title" style={{ marginBottom: 0 }}>{r.etudiantNom}</p>
-              {r.nbEvenementsSuspects > 0 && (
-                <span title={`${r.nbEvenementsSuspects} événement(s) suspect(s) pendant cette tentative (changement d'onglet, perte de focus, copier-coller…)`}>
-                  <Chip tone="red"><i className="ti ti-alert-triangle" aria-hidden="true" /> {r.nbEvenementsSuspects}</Chip>
-                </span>
-              )}
+        {data.resultats.map((r, i) => {
+          const niveau = r.niveauRisque;
+          const toneParNiveau = { FAIBLE: "blue", MOYEN: "warn", ELEVE: "red" };
+          const labelParNiveau = { FAIBLE: "Risque faible", MOYEN: "Risque moyen", ELEVE: "Risque élevé" };
+          return (
+            <div className="card quiz-row" key={i}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <p className="quiz-row-title" style={{ marginBottom: 0 }}>{r.etudiantNom}</p>
+                {niveau && niveau !== "AUCUN" && (
+                  <span title={`${r.nbEvenementsSuspects} événement(s) suspect(s) — score pondéré ${r.scoreRisque} (changement d'onglet, perte de focus, copier-coller, sortie du plein écran…)`}>
+                    <Chip tone={toneParNiveau[niveau] || "grey"}>
+                      <i className="ti ti-alert-triangle" aria-hidden="true" /> {labelParNiveau[niveau]} · {r.scoreRisque}
+                    </Chip>
+                  </span>
+                )}
+              </div>
+              <span className="mono" style={{ fontSize: 14, fontWeight: 600 }}>{r.noteSur20}/20</span>
             </div>
-            <span className="mono" style={{ fontSize: 14, fontWeight: 600 }}>{r.noteSur20}/20</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

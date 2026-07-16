@@ -91,6 +91,19 @@ public class Quiz {
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL)
     private List<Tentative> tentatives;
 
+    /**
+     * v3.3 : anti-triche — score de suspicion pondéré (voir StatsService) à partir
+     * duquel le client déclenche une soumission automatique. Réglable par devoir.
+     */
+    @Column(name = "seuil_alerte_score", nullable = false)
+    
+    private Integer seuilAlerteScore = 15;
+
+    /** v3.3 : force le mode plein écran côté client pendant la tentative (EXAMEN uniquement) */
+    @Column(name = "plein_ecran_obligatoire", nullable = false)
+    
+    private boolean pleinEcranObligatoire = false;
+
     // ── Helpers ──────────────────────────────────────────────────────────
 
     public boolean isEstCloture() {
@@ -140,6 +153,10 @@ public class Quiz {
     public void setTentatives(List<Tentative> tentatives) { this.tentatives = tentatives; }
     public java.math.BigDecimal getNoteSur() { return this.noteSur; }
     public void setNoteSur(java.math.BigDecimal noteSur) { this.noteSur = noteSur; }
+    public Integer getSeuilAlerteScore() { return this.seuilAlerteScore; }
+    public void setSeuilAlerteScore(Integer seuilAlerteScore) { this.seuilAlerteScore = seuilAlerteScore; }
+    public boolean isPleinEcranObligatoire() { return this.pleinEcranObligatoire; }
+    public void setPleinEcranObligatoire(boolean pleinEcranObligatoire) { this.pleinEcranObligatoire = pleinEcranObligatoire; }
     public Quiz() {}
 
 
@@ -162,6 +179,8 @@ public class Quiz {
         private User creePar;
         private List<QuizQuestion> quizQuestions;
         private List<Tentative> tentatives;
+        private Integer seuilAlerteScore;
+        private Boolean pleinEcranObligatoire;
 
         public QuizBuilder id(Long v) { this.id = v; return this; }
         public QuizBuilder titre(String v) { this.titre = v; return this; }
@@ -178,6 +197,8 @@ public class Quiz {
         public QuizBuilder creePar(User v) { this.creePar = v; return this; }
         public QuizBuilder quizQuestions(List<QuizQuestion> v) { this.quizQuestions = v; return this; }
         public QuizBuilder tentatives(List<Tentative> v) { this.tentatives = v; return this; }
+        public QuizBuilder seuilAlerteScore(Integer v) { this.seuilAlerteScore = v; return this; }
+        public QuizBuilder pleinEcranObligatoire(Boolean v) { this.pleinEcranObligatoire = v; return this; }
 
         public Quiz build() {
             Quiz obj = new Quiz();
@@ -196,6 +217,8 @@ public class Quiz {
             if (this.creePar != null) obj.creePar = this.creePar;
             if (this.quizQuestions != null) obj.quizQuestions = this.quizQuestions;
             if (this.tentatives != null) obj.tentatives = this.tentatives;
+            if (this.seuilAlerteScore != null) obj.seuilAlerteScore = this.seuilAlerteScore;
+            if (this.pleinEcranObligatoire != null) obj.pleinEcranObligatoire = this.pleinEcranObligatoire;
             return obj;
         }
     }

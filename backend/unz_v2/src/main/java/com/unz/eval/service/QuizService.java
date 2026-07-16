@@ -97,6 +97,12 @@ public class QuizService {
                 .dateOuverture(req.getDateOuverture())
                 .dateCloture(req.getDateCloture())
                 .matiere(matiere).classe(classe).creePar(enseignant)
+                // v3.3 : anti-triche — valeur par défaut raisonnable si l'enseignant ne précise rien ;
+                // le plein écran obligatoire n'a de sens que pour un EXAMEN.
+                .seuilAlerteScore(req.getSeuilAlerteScore() != null ? req.getSeuilAlerteScore() : 15)
+                .pleinEcranObligatoire(req.getPleinEcranObligatoire() != null
+                        ? req.getPleinEcranObligatoire()
+                        : Quiz.TypeQuiz.valueOf(req.getTypeQuiz()) == Quiz.TypeQuiz.EXAMEN)
                 .build();
         quiz = quizRepo.save(quiz);
 
@@ -382,6 +388,8 @@ public class QuizService {
                 .tentativesMax(q.getTentativesMax())
                 .dateCloture(q.getDateCloture())
                 .estCloture(q.isEstCloture())
+                .seuilAlerteScore(q.getSeuilAlerteScore())
+                .pleinEcranObligatoire(q.isPleinEcranObligatoire())
                 .questions(questions);
 
         // v3.2 : infos de reprise / tentatives, utiles uniquement à l'étudiant
