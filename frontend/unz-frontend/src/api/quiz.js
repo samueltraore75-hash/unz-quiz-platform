@@ -7,5 +7,6 @@ export const quizApi = {
   enCours: (tentativeId) => api.get(`/tentatives/${tentativeId}`),
   sauvegarderReponse: (tentativeId, reponse) => api.post(`/tentatives/${tentativeId}/reponses`, reponse),
   submit: (tentativeId) => api.post(`/tentatives/${tentativeId}/submit`),
+  signalerEvenement: (tentativeId, type) => api.post(`/tentatives/${tentativeId}/evenements`, { type }),
   mine: () => api.get("/tentatives/mine"),
 };

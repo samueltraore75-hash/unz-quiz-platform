@@ -31,8 +31,9 @@ public class QuizService {
     private final UserRepository userRepo;
     private final NotificationService notificationService;
     private final NoteRepository noteRepo;
+    private final TentativeEvenementRepository evenementRepo;
 
-    public QuizService(QuizRepository quizRepo, QuestionRepository questionRepo, QuizQuestionRepository qqRepo, TentativeRepository tentativeRepo, ReponseRepository reponseRepo, MatiereRepository matiereRepo, ClasseRepository classeRepo, InscriptionRepository inscriptionRepo, AnneeAcademiqueService anneeService, UserRepository userRepo, NotificationService notificationService, NoteRepository noteRepo) {
+    public QuizService(QuizRepository quizRepo, QuestionRepository questionRepo, QuizQuestionRepository qqRepo, TentativeRepository tentativeRepo, ReponseRepository reponseRepo, MatiereRepository matiereRepo, ClasseRepository classeRepo, InscriptionRepository inscriptionRepo, AnneeAcademiqueService anneeService, UserRepository userRepo, NotificationService notificationService, NoteRepository noteRepo, TentativeEvenementRepository evenementRepo) {
         this.quizRepo = quizRepo;
         this.questionRepo = questionRepo;
         this.qqRepo = qqRepo;
@@ -45,6 +46,7 @@ public class QuizService {
         this.userRepo = userRepo;
         this.notificationService = notificationService;
         this.noteRepo = noteRepo;
+        this.evenementRepo = evenementRepo;
     }
 
     /**
@@ -260,6 +262,33 @@ public class QuizService {
             reponse.setChoixSelectionnes(choixSet);
         }
         reponseRepo.save(reponse);
+    }
+
+    /**
+     * v3.3 : anti-triche — enregistre un événement suspect signalé par le client
+     * (changement d'onglet, perte de focus, copier-coller…) pendant une tentative en cours.
+     * N'échoue pas bruyamment une fois la tentative soumise : l'événement est simplement ignoré,
+     * pour ne jamais bloquer la fin d'un devoir à cause d'un signal tardif.
+     */
+    @Transactional
+    public void signalerEvenement(Long tentativeId, String type, User etudiant) {
+        Tentative tentative = tentativeRepo.findById(tentativeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tentative introuvable"));
+        if (!tentative.getEtudiant().getId().equals(etudiant.getId()))
+            throw new AccessDeniedException("Cette tentative ne vous appartient pas.");
+        if (tentative.getDateSoumission() != null) return;
+
+        TentativeEvenement.Type t;
+        try {
+            t = TentativeEvenement.Type.valueOf(type);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new BadRequestException("Type d'événement inconnu.");
+        }
+
+        TentativeEvenement ev = new TentativeEvenement();
+        ev.setTentative(tentative);
+        ev.setType(t);
+        evenementRepo.save(ev);
     }
 
     /** v3.2 : reprise d'une tentative en cours — restaure l'heure de début réelle et les réponses déjà données */

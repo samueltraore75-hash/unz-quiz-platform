@@ -329,6 +329,16 @@ class TentativeController {
         return ResponseEntity.ok().build();
     }
 
+    /** v3.3 : anti-triche — le client signale un événement suspect (changement d'onglet, copier-coller…) */
+    @PostMapping("/tentatives/{id}/evenements")
+    @PreAuthorize("hasRole('ETUDIANT')")
+    public ResponseEntity<Void> signalerEvenement(@PathVariable Long id,
+                                                   @Valid @RequestBody DTOs.SignalerEvenementRequest req,
+                                                   @AuthenticationPrincipal User user) {
+        quizService.signalerEvenement(id, req.getType(), user);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/tentatives/{id}/submit")
     @PreAuthorize("hasRole('ETUDIANT')")
     public ResponseEntity<?> submit(@PathVariable Long id, @AuthenticationPrincipal User user) {

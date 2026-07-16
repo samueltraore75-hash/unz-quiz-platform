@@ -24,11 +24,13 @@ public class StatsService {
     private final QuizRepository quizRepo;
     private final TentativeRepository tentativeRepo;
     private final ReponseRepository reponseRepo;
+    private final TentativeEvenementRepository evenementRepo;
 
-    public StatsService(QuizRepository quizRepo, TentativeRepository tentativeRepo, ReponseRepository reponseRepo) {
+    public StatsService(QuizRepository quizRepo, TentativeRepository tentativeRepo, ReponseRepository reponseRepo, TentativeEvenementRepository evenementRepo) {
         this.quizRepo = quizRepo;
         this.tentativeRepo = tentativeRepo;
         this.reponseRepo = reponseRepo;
+        this.evenementRepo = evenementRepo;
     }
 
     public DTOs.QuizStatsDTO statistiquesQuiz(Long quizId, User user) {
@@ -131,10 +133,14 @@ public class StatsService {
                     Double n20 = bareme > 0 && t.getNoteObtenue() != null
                             ? Math.round(t.getNoteObtenue().doubleValue() / bareme * 20 * 100.0) / 100.0
                             : null;
+                    // v3.3 : anti-triche — nombre d'événements suspects relevés pendant cette tentative
+                    long nbEvenementsSuspects = evenementRepo.findByTentative(t).size();
+
                     Map<String, Object> ligne = new HashMap<>();
                     ligne.put("etudiantNom", t.getEtudiant().getFullName());
                     ligne.put("noteObtenue", t.getNoteObtenue() != null ? t.getNoteObtenue() : "—");
                     ligne.put("noteSur20", n20 != null ? n20 : "—");
+                    ligne.put("nbEvenementsSuspects", nbEvenementsSuspects);
                     return ligne;
                 }).collect(Collectors.toList());
 

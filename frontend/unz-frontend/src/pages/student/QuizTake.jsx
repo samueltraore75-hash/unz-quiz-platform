@@ -26,6 +26,43 @@ export default function QuizTake() {
   const [error, setError]         = useState("");
   const submittedRef = useRef(false);
   const saveTimers   = useRef({});
+  const [alertCount, setAlertCount] = useState(0);
+  const tentativeIdRef = useRef(null);
+  const lastSentRef = useRef({});
+
+  useEffect(() => { tentativeIdRef.current = tentativeId; }, [tentativeId]);
+
+  // v3.3 : anti-triche — détecte les comportements suspects pendant une tentative en cours
+  // (changement d'onglet / perte de focus / copier-coller) et les signale au backend.
+  useEffect(() => {
+    function signaler(type) {
+      const tid = tentativeIdRef.current;
+      if (!tid || submittedRef.current) return;
+      const now = Date.now();
+      const dernier = lastSentRef.current[type] || 0;
+      if (now - dernier < 3000) return; // anti-spam : 3s minimum entre deux signalements du même type
+      lastSentRef.current[type] = now;
+      setAlertCount(c => c + 1);
+      quizApi.signalerEvenement(tid, type).catch(() => {});
+    }
+    function onVisibilityChange() {
+      signaler(document.hidden ? "CHANGEMENT_ONGLET" : "RETOUR_FOCUS");
+    }
+    function onBlur() { signaler("PERTE_FOCUS"); }
+    function onCopy()  { signaler("COPIER_COLLER"); }
+    function onPaste() { signaler("COPIER_COLLER"); }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("blur", onBlur);
+    document.addEventListener("copy", onCopy);
+    document.addEventListener("paste", onPaste);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("blur", onBlur);
+      document.removeEventListener("copy", onCopy);
+      document.removeEventListener("paste", onPaste);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,6 +190,13 @@ export default function QuizTake() {
       </div>
 
       {error && <div className="alert alert-error" style={{ marginBottom:16 }}><i className="ti ti-alert-circle" aria-hidden="true" />{error}</div>}
+
+      {alertCount > 0 && (
+        <div className="alert alert-warning" style={{ marginBottom:16 }}>
+          <i className="ti ti-eye" aria-hidden="true" />
+          Comportement suspect détecté ({alertCount}) — ces événements sont enregistrés et visibles par l'enseignant.
+        </div>
+      )}
 
       <div className="list" style={{ marginBottom:20 }}>
         {quiz.questions.map((question, index) => {

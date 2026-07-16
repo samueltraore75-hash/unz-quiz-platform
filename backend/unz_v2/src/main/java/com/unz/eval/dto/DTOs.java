@@ -681,6 +681,16 @@ public static class QuizDetailDTO {
     public void setReponseTexte(String reponseTexte) { this.reponseTexte = reponseTexte; }
 }
 
+/** v3.3 : anti-triche — l'étudiant signale un événement suspect détecté côté client */
+ public static class SignalerEvenementRequest {
+
+    @NotNull private String type;
+
+    // getters & setters
+    public String getType() { return this.type; }
+    public void setType(String type) { this.type = type; }
+}
+
 /** v3.2 : reprise d'une tentative en cours — restaure les réponses déjà sauvegardées */
  public static class TentativeEnCoursDTO {
 
