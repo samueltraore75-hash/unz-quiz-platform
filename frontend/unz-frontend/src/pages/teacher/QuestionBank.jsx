@@ -13,28 +13,70 @@ const TYPES = [
   { value: "REPONSE_COURTE", label: "Réponse courte (correction manuelle)" },
 ];
 
+const DIFFICULTES = [
+  { value: "FACILE", label: "Facile" },
+  { value: "MOYEN", label: "Moyen" },
+  { value: "DIFFICILE", label: "Difficile" },
+];
+
 const CHOIX_VIDE = { texte: "", estCorrect: false };
 
 function emptyForm(matiereId) {
-  return { enonce: "", explication: "", type: "QCM_UNIQUE", difficulte: "MOYEN", points: 1, matiereId, choix: [{ ...CHOIX_VIDE }, { ...CHOIX_VIDE }] };
+  return { enonce: "", explication: "", type: "QCM_UNIQUE", difficulte: "MOYEN", points: 1, matiereId, tags: "", choix: [{ ...CHOIX_VIDE }, { ...CHOIX_VIDE }] };
+}
+
+/** "algo, boucles ,Algo" -> ["algo", "boucles"] (dédoublonné, insensible à la casse) */
+function parseTagsInput(texte) {
+  const seen = new Set();
+  const result = [];
+  for (const brut of texte.split(",")) {
+    const t = brut.trim();
+    if (!t || seen.has(t.toLowerCase())) continue;
+    seen.add(t.toLowerCase());
+    result.push(t);
+  }
+  return result;
 }
 
 export default function QuestionBank() {
   const [matieres, setMatieres] = useState([]);
   const [matiereId, setMatiereId] = useState("");
   const [questions, setQuestions] = useState([]);
+  const [tagsDisponibles, setTagsDisponibles] = useState([]);
+  const [difficulteFiltre, setDifficulteFiltre] = useState("");
+  const [tagFiltre, setTagFiltre] = useState("");
+  const [rechercheFiltre, setRechercheFiltre] = useState("");
   const [form, setForm] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => { teacherApi.myMatieres().then(setMatieres); }, []);
 
-  useEffect(() => {
+  function rechargerQuestions() {
     if (!matiereId) { setQuestions([]); return; }
-    teacherApi.questions(matiereId).then(setQuestions);
+    teacherApi.questions(matiereId, {
+      difficulte: difficulteFiltre || undefined,
+      tag: tagFiltre || undefined,
+      recherche: rechercheFiltre || undefined,
+    }).then(setQuestions);
+  }
+
+  useEffect(() => {
+    if (!matiereId) { setQuestions([]); setTagsDisponibles([]); return; }
+    teacherApi.questionTags(matiereId).then(setTagsDisponibles);
+    setDifficulteFiltre("");
+    setTagFiltre("");
+    setRechercheFiltre("");
     setForm(null);
     setEditingId(null);
   }, [matiereId]);
+
+  // Recherche par sous-chaîne : léger debounce pour ne pas requêter à chaque frappe
+  useEffect(() => {
+    const t = setTimeout(rechargerQuestions, rechercheFiltre ? 300 : 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matiereId, difficulteFiltre, tagFiltre, rechercheFiltre]);
 
   function startCreate() {
     setForm(emptyForm(matiereId));
@@ -44,7 +86,8 @@ export default function QuestionBank() {
   function startEdit(q) {
     setForm({
       enonce: q.enonce, explication: q.explication || "", type: q.type, difficulte: q.difficulte, points: q.points,
-      matiereId, choix: q.choix.length ? q.choix.map((c) => ({ texte: c.texte, estCorrect: c.estCorrect })) : [{ ...CHOIX_VIDE }],
+      matiereId, tags: (q.tags || []).join(", "),
+      choix: q.choix.length ? q.choix.map((c) => ({ texte: c.texte, estCorrect: c.estCorrect })) : [{ ...CHOIX_VIDE }],
     });
     setEditingId(q.id);
   }
@@ -69,15 +112,20 @@ export default function QuestionBank() {
     e.preventDefault();
     setError("");
     const besoinDeChoix = form.type !== "REPONSE_COURTE";
-    const payload = { ...form, points: Number(form.points), choix: besoinDeChoix ? form.choix : [] };
+    const payload = {
+      ...form,
+      points: Number(form.points),
+      choix: besoinDeChoix ? form.choix : [],
+      tags: parseTagsInput(form.tags || ""),
+    };
     try {
       if (editingId) {
         await teacherApi.updateQuestion(editingId, payload);
       } else {
         await teacherApi.createQuestion(payload);
       }
-      const fresh = await teacherApi.questions(matiereId);
-      setQuestions(fresh);
+      rechargerQuestions();
+      teacherApi.questionTags(matiereId).then(setTagsDisponibles);
       setForm(null);
       setEditingId(null);
     } catch (e2) {
@@ -90,6 +138,7 @@ export default function QuestionBank() {
     try {
       await teacherApi.deleteQuestion(id);
       setQuestions((qs) => qs.filter((q) => q.id !== id));
+      teacherApi.questionTags(matiereId).then(setTagsDisponibles);
     } catch (e) {
       setError(e.message || "Impossible de supprimer cette question.");
     }
@@ -105,6 +154,30 @@ export default function QuestionBank() {
         onChange={(e) => setMatiereId(e.target.value)}
         options={matieres.map((m) => ({ value: m.id, label: m.nom }))}
       />
+
+      {matiereId && (
+        <div className="toolbar" style={{ marginBottom: 16, flexWrap: "wrap" }}>
+          <input
+            type="text"
+            placeholder="Rechercher dans l'énoncé…"
+            value={rechercheFiltre}
+            onChange={(e) => setRechercheFiltre(e.target.value)}
+            style={{ flex: "1 1 220px" }}
+          />
+          <Select
+            value={difficulteFiltre}
+            onChange={(e) => setDifficulteFiltre(e.target.value)}
+            placeholder="Toutes difficultés"
+            options={DIFFICULTES}
+          />
+          <Select
+            value={tagFiltre}
+            onChange={(e) => setTagFiltre(e.target.value)}
+            placeholder="Tous les tags"
+            options={tagsDisponibles.map((t) => ({ value: t, label: t }))}
+          />
+        </div>
+      )}
 
       {matiereId && !form && (
         <Button variant="secondary" onClick={startCreate} style={{ marginBottom: 20 }}>
@@ -142,6 +215,18 @@ export default function QuestionBank() {
             value={form.points}
             onChange={(e) => setForm({ ...form, points: e.target.value })}
             required
+          />
+          <Select
+            label="Difficulté"
+            value={form.difficulte}
+            onChange={(e) => setForm({ ...form, difficulte: e.target.value })}
+            options={DIFFICULTES}
+            required
+          />
+          <Field
+            label="Tags (séparés par des virgules — ex : boucles, chapitre 3)"
+            value={form.tags}
+            onChange={(e) => setForm({ ...form, tags: e.target.value })}
           />
 
           {form.type !== "REPONSE_COURTE" && (
@@ -191,7 +276,13 @@ export default function QuestionBank() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
               <div>
                 <p className="question-enonce" style={{ marginBottom: 6 }}>{q.enonce}</p>
-                <Chip tone="neutral">{q.type.replace("_", " ").toLowerCase()} · {q.points} pt{q.points > 1 ? "s" : ""}</Chip>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <Chip tone="neutral">{q.type.replace("_", " ").toLowerCase()} · {q.points} pt{q.points > 1 ? "s" : ""}</Chip>
+                  <Chip tone={q.difficulte === "DIFFICILE" ? "warn" : q.difficulte === "FACILE" ? "green" : "grey"}>
+                    {q.difficulte.toLowerCase()}
+                  </Chip>
+                  {(q.tags || []).map((t) => <Chip key={t} tone="blue">#{t}</Chip>)}
+                </div>
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                 <button className="btn btn-secondary" style={{ fontSize: 12, padding: "6px 10px" }} onClick={() => startEdit(q)}>éditer</button>

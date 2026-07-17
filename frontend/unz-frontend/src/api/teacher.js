@@ -12,7 +12,14 @@ export const teacherApi = {
   quizStats: (quizId) => api.get(`/quizzes/${quizId}/stats`),
   quizNotes: (quizId) => api.get(`/quizzes/${quizId}/notes`),
 
-  questions: (matiereId) => api.get(`/questions?matiereId=${matiereId}`),
+  questions: (matiereId, filtres = {}) => {
+    const params = new URLSearchParams({ matiereId });
+    if (filtres.difficulte) params.set("difficulte", filtres.difficulte);
+    if (filtres.tag) params.set("tag", filtres.tag);
+    if (filtres.recherche) params.set("recherche", filtres.recherche);
+    return api.get(`/questions?${params.toString()}`);
+  },
+  questionTags: (matiereId) => api.get(`/questions/tags?matiereId=${matiereId}`),
   createQuestion: (payload) => api.post("/questions", payload),
   updateQuestion: (id, payload) => api.put(`/questions/${id}`, payload),
   deleteQuestion: (id) => api.del(`/questions/${id}`),

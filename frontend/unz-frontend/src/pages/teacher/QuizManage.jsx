@@ -14,6 +14,10 @@ export default function QuizManage() {
   const [matieres, setMatieres] = useState([]);
   const [matiereChoisie, setMatiereChoisie] = useState("");
   const [banque, setBanque] = useState([]);
+  const [tagsDisponibles, setTagsDisponibles] = useState([]);
+  const [difficulteFiltre, setDifficulteFiltre] = useState("");
+  const [tagFiltre, setTagFiltre] = useState("");
+  const [rechercheFiltre, setRechercheFiltre] = useState("");
   const [selection, setSelection] = useState(new Set());
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -31,9 +35,22 @@ export default function QuizManage() {
   }, [id]);
 
   useEffect(() => {
-    if (!matiereChoisie) { setBanque([]); return; }
-    teacherApi.questions(matiereChoisie).then(setBanque);
+    if (!matiereChoisie) { setBanque([]); setTagsDisponibles([]); return; }
+    teacherApi.questionTags(matiereChoisie).then(setTagsDisponibles);
+    setDifficulteFiltre(""); setTagFiltre(""); setRechercheFiltre("");
   }, [matiereChoisie]);
+
+  useEffect(() => {
+    if (!matiereChoisie) return;
+    const t = setTimeout(() => {
+      teacherApi.questions(matiereChoisie, {
+        difficulte: difficulteFiltre || undefined,
+        tag: tagFiltre || undefined,
+        recherche: rechercheFiltre || undefined,
+      }).then(setBanque);
+    }, rechercheFiltre ? 300 : 0);
+    return () => clearTimeout(t);
+  }, [matiereChoisie, difficulteFiltre, tagFiltre, rechercheFiltre]);
 
   function toggleSelection(qId) {
     setSelection((prev) => {
@@ -111,6 +128,33 @@ export default function QuizManage() {
             onChange={(e) => setMatiereChoisie(e.target.value)}
             options={matieres.map((m) => ({ value: m.id, label: m.nom }))}
           />
+          {matiereChoisie && (
+            <div className="toolbar" style={{ marginBottom: 12, flexWrap: "wrap" }}>
+              <input
+                type="text"
+                placeholder="Rechercher dans l'énoncé…"
+                value={rechercheFiltre}
+                onChange={(e) => setRechercheFiltre(e.target.value)}
+                style={{ flex: "1 1 220px" }}
+              />
+              <Select
+                value={difficulteFiltre}
+                onChange={(e) => setDifficulteFiltre(e.target.value)}
+                placeholder="Toutes difficultés"
+                options={[
+                  { value: "FACILE", label: "Facile" },
+                  { value: "MOYEN", label: "Moyen" },
+                  { value: "DIFFICILE", label: "Difficile" },
+                ]}
+              />
+              <Select
+                value={tagFiltre}
+                onChange={(e) => setTagFiltre(e.target.value)}
+                placeholder="Tous les tags"
+                options={tagsDisponibles.map((t) => ({ value: t, label: t }))}
+              />
+            </div>
+          )}
           {banque.length > 0 && (
             <div className="choix-list" style={{ marginBottom: 16 }}>
               {banque.filter((q) => !idsExistants.has(q.id)).map((q) => (
@@ -121,6 +165,11 @@ export default function QuizManage() {
                     onChange={() => toggleSelection(q.id)}
                   />
                   {q.enonce}
+                  {q.tags && q.tags.length > 0 && (
+                    <span className="mono" style={{ fontSize: 11, color: "var(--ink-soft)" }}>
+                      {q.tags.map((t) => `#${t}`).join(" ")}
+                    </span>
+                  )}
                   <span className="mono" style={{ marginLeft: "auto", fontSize: 12, color: "var(--ink-soft)" }}>{q.points} pt{q.points > 1 ? "s" : ""}</span>
                 </label>
               ))}

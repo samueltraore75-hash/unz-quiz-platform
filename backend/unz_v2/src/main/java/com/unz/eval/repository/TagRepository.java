@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface TagRepository extends JpaRepository<Tag, Long> {
     Optional<Tag> findByLibelle(String libelle);
+    Optional<Tag> findByLibelleIgnoreCase(String libelle);
 }

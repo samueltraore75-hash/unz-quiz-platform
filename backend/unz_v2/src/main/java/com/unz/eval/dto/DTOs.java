@@ -1794,6 +1794,7 @@ public static class BulletinDTO {
     private String explication;
     private String matiereNom;
     private List<ChoixCorrigeDTO> choix; // avec estCorrect : vue enseignant uniquement
+    private List<String> tags = List.of(); // v3.4 : étiquettes thématiques (chapitre, thème...)
 
     // getters & setters
     public Long getId() { return this.id; }
@@ -1812,6 +1813,8 @@ public static class BulletinDTO {
     public void setMatiereNom(String matiereNom) { this.matiereNom = matiereNom; }
     public List<ChoixCorrigeDTO> getChoix() { return this.choix; }
     public void setChoix(List<ChoixCorrigeDTO> choix) { this.choix = choix; }
+    public List<String> getTags() { return this.tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
 
     // ── Builder manuel (auto-généré) ──────────────────────────────────
     public static QuestionFullDTOBuilder builder() { return new QuestionFullDTOBuilder(); }
@@ -1825,6 +1828,7 @@ public static class BulletinDTO {
         private String explication;
         private String matiereNom;
         private List<ChoixCorrigeDTO> choix;
+        private List<String> tags;
 
         public QuestionFullDTOBuilder id(Long v) { this.id = v; return this; }
         public QuestionFullDTOBuilder enonce(String v) { this.enonce = v; return this; }
@@ -1834,6 +1838,7 @@ public static class BulletinDTO {
         public QuestionFullDTOBuilder explication(String v) { this.explication = v; return this; }
         public QuestionFullDTOBuilder matiereNom(String v) { this.matiereNom = v; return this; }
         public QuestionFullDTOBuilder choix(List<ChoixCorrigeDTO> v) { this.choix = v; return this; }
+        public QuestionFullDTOBuilder tags(List<String> v) { this.tags = v; return this; }
 
         public QuestionFullDTO build() {
             QuestionFullDTO obj = new QuestionFullDTO();
@@ -1845,6 +1850,7 @@ public static class BulletinDTO {
             if (this.explication != null) obj.explication = this.explication;
             if (this.matiereNom != null) obj.matiereNom = this.matiereNom;
             if (this.choix != null) obj.choix = this.choix;
+            if (this.tags != null) obj.tags = this.tags;
             return obj;
         }
     }
@@ -1859,6 +1865,7 @@ public static class BulletinDTO {
     private String explication;
     @NotNull private Long matiereId;
     private List<CreateChoixRequest> choix;
+    private List<String> tags; // v3.4 : libellés d'étiquettes ; créées à la volée si nouvelles
 
     // getters & setters
     public String getEnonce() { return this.enonce; }
@@ -1875,6 +1882,8 @@ public static class BulletinDTO {
     public void setMatiereId(Long matiereId) { this.matiereId = matiereId; }
     public List<CreateChoixRequest> getChoix() { return this.choix; }
     public void setChoix(List<CreateChoixRequest> choix) { this.choix = choix; }
+    public List<String> getTags() { return this.tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
 }
 
 // ── Inscription libre (demande de compte) ─────────────────────────────────

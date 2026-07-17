@@ -28,22 +28,51 @@ class QuestionBankController {
     private final QuestionRepository questionRepo;
     private final MatiereRepository matiereRepo;
     private final QuizQuestionRepository qqRepo;
+    private final TagRepository tagRepo;
 
-    public QuestionBankController(QuestionRepository questionRepo, MatiereRepository matiereRepo, QuizQuestionRepository qqRepo) {
+    public QuestionBankController(QuestionRepository questionRepo, MatiereRepository matiereRepo,
+                                   QuizQuestionRepository qqRepo, TagRepository tagRepo) {
         this.questionRepo = questionRepo;
         this.matiereRepo = matiereRepo;
         this.qqRepo = qqRepo;
+        this.tagRepo = tagRepo;
     }
 
-    /** Banque de questions d'une matière que l'enseignant connecté enseigne */
+    /**
+     * Banque de questions d'une matière que l'enseignant connecté enseigne.
+     * v3.4 : filtres facultatifs — difficulte (FACILE/MOYEN/DIFFICILE), tag (libellé exact),
+     * recherche (sous-chaîne de l'énoncé, insensible à la casse). Le volume par matière reste
+     * modeste, donc le filtrage se fait simplement en mémoire après le chargement.
+     */
     @GetMapping
     public ResponseEntity<List<DTOs.QuestionFullDTO>> list(@RequestParam Long matiereId,
+                                                             @RequestParam(required = false) String difficulte,
+                                                             @RequestParam(required = false) String tag,
+                                                             @RequestParam(required = false) String recherche,
                                                              @AuthenticationPrincipal User enseignant) {
         Matiere matiere = matiereRepo.findById(matiereId)
                 .orElseThrow(() -> new ResourceNotFoundException("Matière introuvable"));
         verifierProprietaire(matiere, enseignant);
-        return ResponseEntity.ok(questionRepo.findByMatiere(matiere)
-                .stream().map(this::toDTO).collect(Collectors.toList()));
+
+        String rechercheNormalisee = recherche == null ? null : recherche.trim().toLowerCase();
+        return ResponseEntity.ok(questionRepo.findByMatiere(matiere).stream()
+                .filter(q -> difficulte == null || q.getDifficulte().name().equalsIgnoreCase(difficulte))
+                .filter(q -> tag == null || (q.getTags() != null
+                        && q.getTags().stream().anyMatch(t -> t.getLibelle().equalsIgnoreCase(tag))))
+                .filter(q -> rechercheNormalisee == null
+                        || q.getEnonce().toLowerCase().contains(rechercheNormalisee))
+                .map(this::toDTO).collect(Collectors.toList()));
+    }
+
+    /** Liste des tags existants sur la banque d'une matière, pour peupler le filtre côté client */
+    @GetMapping("/tags")
+    public ResponseEntity<List<String>> tags(@RequestParam Long matiereId, @AuthenticationPrincipal User enseignant) {
+        Matiere matiere = matiereRepo.findById(matiereId)
+                .orElseThrow(() -> new ResourceNotFoundException("Matière introuvable"));
+        verifierProprietaire(matiere, enseignant);
+        return ResponseEntity.ok(questionRepo.findByMatiere(matiere).stream()
+                .flatMap(q -> q.getTags() == null ? java.util.stream.Stream.<Tag>empty() : q.getTags().stream())
+                .map(Tag::getLibelle).distinct().sorted().collect(Collectors.toList()));
     }
 
     @GetMapping("/{id}")
@@ -72,6 +101,7 @@ class QuestionBankController {
                 .matiere(matiere)
                 .build();
         q.setChoix(construireChoix(req, q));
+        q.setTags(construireTags(req.getTags()));
         questionRepo.save(q); // cascade ALL : les choix sont persistés avec la question
         return ResponseEntity.status(201).body(toDTO(q));
     }
@@ -92,6 +122,7 @@ class QuestionBankController {
         q.setPoints(req.getPoints());
         // orphanRemoval=true sur Question.choix : remplacer la liste supprime les anciens choix
         q.setChoix(construireChoix(req, q));
+        q.setTags(construireTags(req.getTags()));
         questionRepo.save(q);
         return ResponseEntity.ok(toDTO(q));
     }
@@ -127,6 +158,21 @@ class QuestionBankController {
                 .collect(Collectors.toList());
     }
 
+    /** Retrouve chaque tag par libellé (insensible à la casse) ou le crée s'il n'existe pas encore */
+    private List<Tag> construireTags(List<String> libelles) {
+        if (libelles == null) return List.of();
+        return libelles.stream()
+                .map(String::trim)
+                .filter(l -> !l.isEmpty())
+                .distinct()
+                .map(l -> tagRepo.findByLibelleIgnoreCase(l).orElseGet(() -> {
+                    Tag t = new Tag();
+                    t.setLibelle(l);
+                    return tagRepo.save(t);
+                }))
+                .collect(Collectors.toList());
+    }
+
     private void verifierProprietaire(Matiere matiere, User enseignant) {
         if (!matiere.estEnseignePar(enseignant))
             throw new AccessDeniedException("Vous ne pouvez gérer que les questions de vos matières.");
@@ -141,10 +187,12 @@ class QuestionBankController {
                 .map(c -> DTOs.ChoixCorrigeDTO.builder()
                         .id(c.getId()).texte(c.getTexte()).estCorrect(c.isEstCorrect()).build())
                 .collect(Collectors.toList());
+        List<String> tags = q.getTags() == null ? List.of() : q.getTags().stream()
+                .map(Tag::getLibelle).sorted().collect(Collectors.toList());
         return DTOs.QuestionFullDTO.builder()
                 .id(q.getId()).enonce(q.getEnonce()).explication(q.getExplication())
                 .type(q.getType().name()).difficulte(q.getDifficulte().name())
                 .points(q.getPoints()).matiereNom(q.getMatiere().getNom())
-                .choix(choix).build();
+                .choix(choix).tags(tags).build();
     }
 }
