@@ -162,6 +162,7 @@ export default function QuestionBank() {
             placeholder="Rechercher dans l'énoncé…"
             value={rechercheFiltre}
             onChange={(e) => setRechercheFiltre(e.target.value)}
+            className="field-input"
             style={{ flex: "1 1 220px" }}
           />
           <Select
