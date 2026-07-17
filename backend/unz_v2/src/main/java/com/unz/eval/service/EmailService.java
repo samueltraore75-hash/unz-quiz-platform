@@ -86,6 +86,44 @@ public class EmailService {
         envoyer(destinataire, sujet, corps);
     }
 
+    // ── v3.6 : notifications par e-mail, en complément des notifications in-app ──
+
+    public void envoyerQuizDisponible(String destinataire, String prenom, String quizTitre, String lien) {
+        String sujet = "Nouveau devoir disponible : " + quizTitre;
+        String corps = "Bonjour " + safe(prenom) + ",\n\n"
+                + "Le devoir \"" + quizTitre + "\" est maintenant disponible sur UNZ Quiz.\n"
+                + "Vous pouvez le consulter ici : " + lien + "\n\n"
+                + "— L'équipe UNZ Quiz";
+        envoyer(destinataire, sujet, corps);
+    }
+
+    public void envoyerNotesDisponibles(String destinataire, String prenom, String quizTitre, String lien) {
+        String sujet = "Résultats disponibles : " + quizTitre;
+        String corps = "Bonjour " + safe(prenom) + ",\n\n"
+                + "Vos résultats pour \"" + quizTitre + "\" sont maintenant disponibles.\n"
+                + "Consultez-les ici : " + lien + "\n\n"
+                + "— L'équipe UNZ Quiz";
+        envoyer(destinataire, sujet, corps);
+    }
+
+    public void envoyerBulletinDisponible(String destinataire, String prenom, String semestreLabel, String lien) {
+        String sujet = "Votre bulletin du semestre " + semestreLabel + " est disponible";
+        String corps = "Bonjour " + safe(prenom) + ",\n\n"
+                + "Votre bulletin du semestre " + semestreLabel + " vient d'être publié.\n"
+                + "Consultez-le ici : " + lien + "\n\n"
+                + "— L'équipe UNZ Quiz";
+        envoyer(destinataire, sujet, corps);
+    }
+
+    public void envoyerNoteSaisie(String destinataire, String prenom, String matiere, String valeur, String lien) {
+        String sujet = "Nouvelle note en " + matiere;
+        String corps = "Bonjour " + safe(prenom) + ",\n\n"
+                + "Une note de " + valeur + "/20 vient d'être enregistrée en " + matiere + ".\n"
+                + "Consultez le détail ici : " + lien + "\n\n"
+                + "— L'équipe UNZ Quiz";
+        envoyer(destinataire, sujet, corps);
+    }
+
     private void envoyer(String destinataire, String sujet, String corps) {
         if (!enabled) {
             log.info("[email désactivé] à={} sujet=\"{}\" — envoi sauté (app.mail.enabled=false)", destinataire, sujet);

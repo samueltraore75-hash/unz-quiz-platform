@@ -2,6 +2,8 @@ package com.unz.eval.notification;
 
 import com.unz.eval.dto.DTOs;
 import com.unz.eval.entity.User;
+import com.unz.eval.service.EmailService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
@@ -12,14 +14,22 @@ import java.util.stream.Collectors;
 
 /**
  * Service de création et gestion des notifications.
+ * v3.6 : en plus de la notification in-app, chaque événement déclenche
+ * aussi un e-mail via EmailService (Brevo) — même logique défensive :
+ * un souci d'envoi ne bloque jamais l'action déclenchante.
  */
 @Service
 public class NotificationService {
 
     private final NotificationRepository notifRepo;
+    private final EmailService emailService;
 
-    public NotificationService(NotificationRepository notifRepo) {
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
+
+    public NotificationService(NotificationRepository notifRepo, EmailService emailService) {
         this.notifRepo = notifRepo;
+        this.emailService = emailService;
     }
 
     public void notifierQuizOuvert(List<User> etudiants, String quizTitre, Long quizId) {
@@ -33,6 +43,9 @@ public class NotificationService {
                 .build()
         ).collect(Collectors.toList());
         notifRepo.saveAll(notifs);
+
+        String lien = frontendUrl + "/quiz/" + quizId;
+        etudiants.forEach(e -> emailService.envoyerQuizDisponible(e.getEmail(), e.getFirstName(), quizTitre, lien));
     }
 
     public void notifierNotesCloture(List<User> etudiants, String quizTitre, Long quizId) {
@@ -46,6 +59,9 @@ public class NotificationService {
                 .build()
         ).collect(Collectors.toList());
         notifRepo.saveAll(notifs);
+
+        String lien = frontendUrl + "/quiz/" + quizId + "/resultat";
+        etudiants.forEach(e -> emailService.envoyerNotesDisponibles(e.getEmail(), e.getFirstName(), quizTitre, lien));
     }
 
     public void notifierBulletinPublie(User etudiant, String semestreLabel, Long bulletinId) {
@@ -56,6 +72,9 @@ public class NotificationService {
             .message("Votre bulletin du semestre " + semestreLabel + " est disponible.")
             .referenceId(bulletinId)
             .build());
+
+        String lien = frontendUrl + "/notes";
+        emailService.envoyerBulletinDisponible(etudiant.getEmail(), etudiant.getFirstName(), semestreLabel, lien);
     }
 
     public void notifierNoteSaisie(User etudiant, String matiere, String valeur) {
@@ -65,6 +84,9 @@ public class NotificationService {
             .titre("Nouvelle note enregistrée")
             .message("Une note de " + valeur + "/20 a été saisie pour " + matiere + ".")
             .build());
+
+        String lien = frontendUrl + "/notes";
+        emailService.envoyerNoteSaisie(etudiant.getEmail(), etudiant.getFirstName(), matiere, valeur, lien);
     }
 
     public List<Notification> getMesNotifications(User user) {
